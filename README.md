@@ -2,6 +2,8 @@
 
 A MelonLoader mod for A Township Tale that replaces the game's Vivox voice chat with a custom Opus-based implementation running over the game's own network socket. No third-party voice service, no extra ports: voice packets travel on the same kcp2k connection the game already uses.
 
+> Disclaimer: Circuit's Voice Chat is an unofficial fan-made mod, not affiliated with or endorsed by Alta VR. It contains no game files or assets. All code is my own original work, plus open-source libraries used under their licenses. You must own A Township Tale to use this mod. Use at your own risk.
+
 ## Features
 
 - Working 3D proximity voice chat on custom servers, replaces the game's Vivox dependency
