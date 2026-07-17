@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WwiseDocument Type="WorkUnit" ID="{B3A23A23-4C61-4422-A021-0440BE901370}" SchemaVersion="97">
+	<Attenuations>
+		<WorkUnit Name="Default Work Unit" ID="{B3A23A23-4C61-4422-A021-0440BE901370}" PersistMode="Standalone">
+			<ChildrenList>
+				<Attenuation Name="ModVoiceAttenuation" ID="{E076B1D7-1A63-497D-8417-E02F487D75D8}" ShortID="486063643">
+					<PropertyList>
+						<Property Name="RadiusMax" Type="Real64" Value="50"/>
+					</PropertyList>
+					<CurveUsageInfoList>
+						<VolumeDryUsage>
+							<CurveUsageInfo Platform="Linked" CurveToUse="Custom">
+								<Curve Name="VolumeDry" ID="{BA8D41F4-4835-48BA-A297-1D924292E5EA}">
+									<PropertyList>
+										<Property Name="Flags" Type="int32" Value="3"/>
+									</PropertyList>
+									<PointList>
+										<Point>
+											<XPos>0</XPos>
+											<YPos>0</YPos>
+											<Flags>5</Flags>
+										</Point>
+										<Point>
+											<XPos>1</XPos>
+											<YPos>0</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>3</XPos>
+											<YPos>-0.362</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>5</XPos>
+											<YPos>-0.74</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>8</XPos>
+											<YPos>-1.339</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>11</XPos>
+											<YPos>-1.983</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>14</XPos>
+											<YPos>-2.678</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>18</XPos>
+											<YPos>-3.701</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>22</XPos>
+											<YPos>-4.861</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>26</XPos>
+											<YPos>-6.2</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>30</XPos>
+											<YPos>-7.783</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>34</XPos>
+											<YPos>-9.722</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>38</XPos>
+											<YPos>-12.22</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>42</XPos>
+											<YPos>-15.742</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>45</XPos>
+											<YPos>-19.825</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>47</XPos>
+											<YPos>-24.261</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>49</XPos>
+											<YPos>-33.804</YPos>
+											<Flags>0</Flags>
+										</Point>
+										<Point>
+											<XPos>50</XPos>
+											<YPos>-96</YPos>
+											<Flags>37</Flags>
+										</Point>
+									</PointList>
+								</Curve>
+							</CurveUsageInfo>
+						</VolumeDryUsage>
+						<VolumeWetGameUsage>
+							<CurveUsageInfo Platform="Linked" CurveToUse="UseVolumeDry"/>
+						</VolumeWetGameUsage>
+						<VolumeWetUserUsage>
+							<CurveUsageInfo Platform="Linked" CurveToUse="UseVolumeDry"/>
+						</VolumeWetUserUsage>
+						<LowPassFilterUsage>
+							<CurveUsageInfo Platform="Linked" CurveToUse="None"/>
+						</LowPassFilterUsage>
+						<HighPassFilterUsage>
+							<CurveUsageInfo Platform="Linked" CurveToUse="None"/>
+						</HighPassFilterUsage>
+						<SpreadUsage>
+							<CurveUsageInfo Platform="Linked" CurveToUse="None"/>
+						</SpreadUsage>
+						<FocusUsage>
+							<CurveUsageInfo Platform="Linked" CurveToUse="None"/>
+						</FocusUsage>
+					</CurveUsageInfoList>
+				</Attenuation>
+			</ChildrenList>
+		</WorkUnit>
+	</Attenuations>
+</WwiseDocument>

@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='utf-8'?>
+<WwiseDocument Type="WorkUnit" ID="{F5B94341-51F1-499F-A648-8A0153D54CDC}" SchemaVersion="97">
+	<AudioObjects>
+		<WorkUnit Name="Default Work Unit" ID="{F5B94341-51F1-499F-A648-8A0153D54CDC}" PersistMode="Standalone">
+			<ChildrenList>
+				<Sound Name="ModVoice" ID="{5C6D065F-CE7C-4402-A6B1-2984D2C2739C}" ShortID="881807773">
+					<PropertyList>
+						<Property Name="3DSpatialization" Type="int16" Value="2" />
+					</PropertyList>
+					<ReferenceList>
+						<Reference Name="Attenuation">
+							<ObjectRef Name="ModVoiceAttenuation" ID="{E076B1D7-1A63-497D-8417-E02F487D75D8}" WorkUnitID="{B3A23A23-4C61-4422-A021-0440BE901370}" />
+						</Reference>
+						<Reference Name="Conversion">
+							<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{35074D57-E5A2-4A8A-9396-85C0264E0785}" />
+						</Reference>
+						<Reference Name="OutputBus">
+							<ObjectRef Name="Master Audio Bus" ID="{1514A4D8-1DA6-412A-A17E-75CA0C2149F3}" WorkUnitID="{909B65C2-CF93-4857-B9DA-2E81788EFB55}" />
+						</Reference>
+					</ReferenceList>
+					<ChildrenList>
+						<SourcePlugin Name="Audio Input" ID="{F105DBE0-B624-4F95-AB70-D13B246F7B9E}" ShortID="1312012597" PluginName="Wwise Audio Input" CompanyID="0" PluginID="200">
+							<Language>SFX</Language>
+						</SourcePlugin>
+					</ChildrenList>
+					<ActiveSourceList>
+						<ActiveSource Name="Audio Input" ID="{F105DBE0-B624-4F95-AB70-D13B246F7B9E}" Platform="Linked" />
+					</ActiveSourceList>
+				</Sound>
+				<Sound Name="ModStream" ID="{07CBE20E-0B42-4081-8118-466F961FAECF}" ShortID="569475588">
+					<ReferenceList>
+						<Reference Name="Conversion">
+							<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{35074D57-E5A2-4A8A-9396-85C0264E0785}" />
+						</Reference>
+						<Reference Name="OutputBus">
+							<ObjectRef Name="Master Audio Bus" ID="{1514A4D8-1DA6-412A-A17E-75CA0C2149F3}" WorkUnitID="{909B65C2-CF93-4857-B9DA-2E81788EFB55}" />
+						</Reference>
+					</ReferenceList>
+					<ChildrenList>
+						<SourcePlugin Name="Audio Input" ID="{C6608097-1B2F-4A1C-8600-624E18365CA4}" ShortID="2329279758" PluginName="Wwise Audio Input" CompanyID="0" PluginID="200">
+							<Language>SFX</Language>
+						</SourcePlugin>
+					</ChildrenList>
+					<ActiveSourceList>
+						<ActiveSource Name="Audio Input" ID="{C6608097-1B2F-4A1C-8600-624E18365CA4}" Platform="Linked" />
+					</ActiveSourceList>
+				</Sound>
+			</ChildrenList>
+		</WorkUnit>
+	</AudioObjects>
+</WwiseDocument>

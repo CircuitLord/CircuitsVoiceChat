@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- default to release builds, sdk would otherwise pick debug -->
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+  </PropertyGroup>
+</Project>

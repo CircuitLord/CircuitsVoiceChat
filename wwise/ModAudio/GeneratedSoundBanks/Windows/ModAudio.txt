@@ -1,0 +1,8 @@
+Event	ID	Name			Wwise Object Path	Notes
+	193901604	Play_ModVoice			\Default Work Unit\Play_ModVoice	
+	3572445798	Play_ModStream			\Default Work Unit\Play_ModStream	
+
+Source plug-ins	ID	Name	Type		Wwise Object Path	Notes
+	181796110	Audio Input	Wwise Audio Input		\Actor-Mixer Hierarchy\Default Work Unit\ModStream\Audio Input	
+	1312012597	Audio Input	Wwise Audio Input		\Actor-Mixer Hierarchy\Default Work Unit\ModVoice\Audio Input	
+

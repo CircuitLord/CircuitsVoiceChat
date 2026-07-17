@@ -1,0 +1,5 @@
+.cache/
+*.validationcache
+*.wsettings
+*.wsettings.user
+GeneratedSoundBanks/Windows/Init.*

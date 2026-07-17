@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WwiseDocument Type="WorkUnit" ID="{9D5D2047-48BE-4480-8789-0B4C398B6A56}" SchemaVersion="97">
+	<Events>
+		<WorkUnit Name="Default Work Unit" ID="{9D5D2047-48BE-4480-8789-0B4C398B6A56}" PersistMode="Standalone">
+			<ChildrenList>
+				<Event Name="Play_ModVoice" ID="{9F657759-18B2-498C-A7C3-D21CEA929FC5}">
+					<ChildrenList>
+						<Action Name="" ID="{922AF5E9-D3BD-460A-8994-7FC2E2531AF2}" ShortID="694770584">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="ModVoice" ID="{5C6D065F-CE7C-4402-A6B1-2984D2C2739C}" WorkUnitID="{F5B94341-51F1-499F-A648-8A0153D54CDC}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_ModStream" ID="{15902DD4-C50F-42B5-93AA-926814C594FC}">
+					<ChildrenList>
+						<Action Name="" ID="{73C8FCBA-CFE6-4AD4-979B-3666A757324D}" ShortID="496905311">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="ModStream" ID="{07CBE20E-0B42-4081-8118-466F961FAECF}" WorkUnitID="{F5B94341-51F1-499F-A648-8A0153D54CDC}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+			</ChildrenList>
+		</WorkUnit>
+	</Events>
+</WwiseDocument>

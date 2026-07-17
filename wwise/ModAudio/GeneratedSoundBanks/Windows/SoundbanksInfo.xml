@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SoundBanksInfo Platform="Windows" BasePlatform="Windows" SchemaVersion="12" SoundbankVersion="135">
+	<RootPaths>
+		<ProjectRoot>C:\Games\Alta\A Township Tale\modSrc\VoipReplacement\wwise\ModAudio\</ProjectRoot>
+		<SourceFilesRoot>C:\Games\Alta\A Township Tale\modSrc\VoipReplacement\wwise\ModAudio\.cache\Windows\</SourceFilesRoot>
+		<SoundBanksRoot>C:\Games\Alta\A Township Tale\modSrc\VoipReplacement\wwise\ModAudio\GeneratedSoundBanks\Windows\</SoundBanksRoot>
+		<ExternalSourcesInputFile></ExternalSourcesInputFile>
+		<ExternalSourcesOutputRoot>C:\Games\Alta\A Township Tale\modSrc\VoipReplacement\wwise\ModAudio\GeneratedSoundBanks\Windows</ExternalSourcesOutputRoot>
+	</RootPaths>
+	<DialogueEvents/>
+	<StreamedFiles/>
+	<MediaFilesNotInAnyBank/>
+	<SoundBanks>
+		<SoundBank Id="1355168291" Language="SFX" Hash="1104702892">
+			<ObjectPath>Init</ObjectPath>
+			<ShortName>Init</ShortName>
+			<Path>Init.bnk</Path>
+		</SoundBank>
+		<SoundBank Id="4058570187" Language="SFX" Hash="1827241360">
+			<ObjectPath>\SoundBanks\Default Work Unit\ModAudio</ObjectPath>
+			<ShortName>ModAudio</ShortName>
+			<Path>ModAudio.bnk</Path>
+			<IncludedEvents>
+				<Event Id="3572445798" Name="Play_ModStream" ObjectPath="\Events\Default Work Unit\Play_ModStream"/>
+				<Event Id="193901604" Name="Play_ModVoice" ObjectPath="\Events\Default Work Unit\Play_ModVoice"/>
+			</IncludedEvents>
+		</SoundBank>
+	</SoundBanks>
+</SoundBanksInfo>
