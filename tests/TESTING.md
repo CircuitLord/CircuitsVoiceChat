@@ -10,16 +10,17 @@ The runner refuses to start if the game or port 1757 is already in use. It launc
 one hidden dedicated server and two hidden flycam clients with distinct offline user
 IDs, then stops only those processes.
 
-The test sends fifteen real 48 kHz Opus frames through `MessageType.VoiceChat` and
-asserts:
+The test sends real 48 kHz Opus frames through `MessageType.VoiceChat` and asserts:
 
+- the receiver handshake reaches the sender before the test stream starts;
 - the server injects authenticated sender ID 2;
 - frames at 49.9 m reach client 1;
 - frames at 50.1 m never reach client 1;
 - relay resumes after returning to 49.9 m;
 - the receiver produces nonzero decoded PCM;
 - a five-packet gap uses three PLC frames and one in-band FEC frame, then resumes;
-- three duplicate sequence violations disconnect the sender;
+- a simulated controller transition resets the encoder and resumes at a fresh talkspurt sequence 0;
+- three duplicate sequence violations are rejected;
 - Concentus loads and passes its local encode/decode test in all three processes;
 - the selected game channel is unreliable with a 30 ms maximum send interval.
 

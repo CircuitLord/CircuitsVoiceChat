@@ -52,6 +52,12 @@ namespace CircuitsVoiceChat
                 throw new InvalidOperationException("Opus self-test produced invalid PCM");
         }
 
+        internal void ResetTalkspurt()
+        {
+            talking = false;
+            hangover = 0;
+        }
+
         internal bool Encode(float[] frame, out byte[] payload, out bool newTalkspurt, out float energy)
         {
             double sum = 0;

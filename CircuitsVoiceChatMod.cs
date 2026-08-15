@@ -1,6 +1,6 @@
 using MelonLoader;
 
-[assembly: MelonInfo(typeof(CircuitsVoiceChat.CircuitsVoiceChatMod), "Circuit's Voice Chat", "1.0.4", "CircuitLord")]
+[assembly: MelonInfo(typeof(CircuitsVoiceChat.CircuitsVoiceChatMod), "Circuit's Voice Chat", "1.0.5", "CircuitLord")]
 [assembly: MelonGame("Alta", "A Township Tale")]
 
 namespace CircuitsVoiceChat

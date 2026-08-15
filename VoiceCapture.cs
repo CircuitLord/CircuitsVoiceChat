@@ -146,7 +146,13 @@ namespace CircuitsVoiceChat
             catch { }
             drainThread = null;
             CloseDevice();
+            Discard();
+        }
+
+        internal void Discard()
+        {
             lock (bufferSync) { ringRead = ringWrite = ringCount = 0; }
+            encoder.ResetTalkspurt();
             LocalEnergy = 0f;
         }
 

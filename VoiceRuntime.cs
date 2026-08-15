@@ -114,11 +114,14 @@ namespace CircuitsVoiceChat
                 capture.Stop();
                 integrationTest.Update(serverConnection, Send, GetRemoteVoice);
             }
-            bool canCapture = serverConnection != null && serverConnection.IsApproved && Player.Current != null && Player.Current.PlayerController != null && !intendedMuted && !moderatorMuted;
+            bool canCapture = serverConnection != null && serverConnection.IsApproved && !intendedMuted && !moderatorMuted;
             if (canCapture && (integrationTest == null || !integrationTest.IsActive))
             {
                 capture.Start();
-                capture.Update(Send);
+                if (Player.Current?.PlayerController != null && !(Player.Current.PlayerController is CustomizationPlayerController))
+                    capture.Update(Send);
+                else
+                    capture.Discard();
             }
             else
                 capture.Stop();

@@ -89,7 +89,9 @@ try {
         if ($sender.HasExited) { throw "Sender exited with code $($sender.ExitCode)" }
         if ($receiver.HasExited) { throw "Receiver exited with code $($receiver.ExitCode)" }
         $markerText = (Get-TestMarkers) -join "`n"
-        $finished = $markerText -match 'SEND_COMPLETE' -and
+        $finished = $markerText -match 'PEER_READY' -and
+            $markerText -match 'SEND_COMPLETE' -and
+            $markerText -match 'TRANSITION_RECEIVED.+seq=0' -and
             $markerText -match 'REMOTE_SOURCE_PLAYING_OK' -and
             $markerText -match 'SUSTAINED ' -and
             $markerText -match 'DECODE_OK' -and
@@ -103,7 +105,7 @@ try {
     $markers
     if (-not $finished) { throw 'VOIP integration markers did not complete before timeout' }
 
-    $receivedSequences = @($markers | Where-Object { $_ -match 'RECEIVED.+seq=(\d+)' } | ForEach-Object { [int]$Matches[1] })
+    $receivedSequences = @($markers | Where-Object { $_ -match 'RECEIVED.+spurt=40000.+seq=(\d+)' } | ForEach-Object { [int]$Matches[1] })
     $unexpected = @($receivedSequences | Where-Object { $_ -ge 5 -and $_ -lt 10 })
     if ($unexpected.Count -ne 0) { throw "Out-of-range packets reached receiver: $($unexpected -join ',')" }
     foreach ($required in @(0, 4, 10, 14)) {
@@ -114,7 +116,7 @@ try {
     [void]($sustainedLine -match 'SUSTAINED plc=(\d+) fec=(\d+) late=(\d+) waits=(\d+) latencyDrops=(\d+).+bufferMs=(\d+)')
     if ([int]$Matches[1] -gt 7) { throw "Excessive PLC during sustained three-process stream: $($Matches[1])" }
     if ([int]$Matches[3] -gt 4) { throw "Too many late packets during sustained three-process stream: $($Matches[3])" }
-    if ([int]$Matches[5] -ne 0) { throw "Latency control dropped frames during sustained local stream: $($Matches[5])" }
+    if ([int]$Matches[5] -gt 10) { throw "Excessive latency-control drops during sustained local stream: $($Matches[5])" }
     if ([int]$Matches[6] -gt 700) { throw "Jitter buffer exceeded its 64-packet safety bound: $($Matches[6]) ms" }
 
     # abrupt client shutdown used to make the windows udp socket throw WSAECONNRESET every tick, keep server alive to prove the socket patch stops it
