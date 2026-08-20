@@ -17,6 +17,11 @@ namespace CircuitsVoiceChat
         private const double TargetShrinkAfterSeconds = 10.0;
         private const int MaximumStoredPackets = 64;
         private const int MaximumPlcFrames = 3;
+        private const int FreshSpurtSequenceWindow = 25; // matches the relay's fresh-talkspurt acceptance
+        private const int SessionRestartSpurtJump = 16;
+        private const float SessionRestartGapMilliseconds = 10000f;
+        private const double PostRetrySeconds = 5.0;
+        private const double PlaybackStallSeconds = 2.0;
         private readonly int userId;
         private readonly object stateSync = new object();
         private readonly bool integrationReceiver = CommandLineArguments.Contains("/voip_test_receiver");
@@ -41,6 +46,10 @@ namespace CircuitsVoiceChat
         private uint playingId;
         private Transform head;
         private double lastPacketAt;
+        private double nextPostAttempt;
+        private long watchdogReadCallbacks = -1;
+        private double watchdogChangedAt;
+        private volatile bool audioFaulted;
 
         internal float Energy { get; private set; }
         internal int LastDecodedSequence { get; private set; } = -1;
@@ -98,8 +107,14 @@ namespace CircuitsVoiceChat
                 }
                 else if (packet.Talkspurt != talkspurt)
                 {
-                    // accept newer talkspurts even with lost lead packets, only drop stragglers from older spurts
-                    if ((short)(packet.Talkspurt - talkspurt) <= 0)
+                    // accept newer talkspurts even with lost lead packets, only drop stragglers from older spurts.
+                    // a sender who restarted their game resumes near talkspurt zero, which reads as older here and
+                    // would stay muted until this client reconnects; a fresh spurt start that is far behind the
+                    // watermark or arrives after a long receive gap is such a restart, so resync on it instead
+                    short spurtDelta = (short)(packet.Talkspurt - talkspurt);
+                    if (spurtDelta <= 0
+                        && (packet.Sequence >= FreshSpurtSequenceWindow
+                            || (spurtDelta > -SessionRestartSpurtJump && LastPacketGapMilliseconds <= SessionRestartGapMilliseconds)))
                         return;
                     ResetStream(packet);
                 }
@@ -283,23 +298,69 @@ namespace CircuitsVoiceChat
             if (!Player.SafeGetPlayer(userId, out Player player) || player.PlayerController == null || player.PlayerController.Head == null)
                 return;
             head = player.PlayerController.Head;
-            if (emitter != null)
+            if (emitter == null)
             {
-                emitter.transform.SetPositionAndRotation(head.position, head.rotation);
-                ApplyOutputGain();
-                return;
+                if (!ModAudioBank.Loaded)
+                    return;
+                emitter = new GameObject($"Voice-{userId}");
+                akObj = emitter.AddComponent<AkGameObj>();
+                akObj.Register();
+                akObj.AttachToTransform(emitter.transform);
+                appliedGain = -1f; // fresh game object, output gain must be applied to it again
+                PostVoiceEvent();
             }
-            if (!ModAudioBank.Loaded)
-                return;
-            emitter = new GameObject($"Voice-{userId}");
             emitter.transform.SetPositionAndRotation(head.position, head.rotation);
-            akObj = emitter.AddComponent<AkGameObj>();
-            akObj.Register();
-            akObj.AttachToTransform(emitter.transform);
+            MonitorPlayback();
+            ApplyOutputGain();
+        }
+
+        private void PostVoiceEvent()
+        {
+            if (Clock.Now < nextPostAttempt)
+                return;
+            nextPostAttempt = Clock.Now + PostRetrySeconds;
+            watchdogReadCallbacks = -1;
             playingId = AkAudioInputManager.PostAudioInputEvent(ModAudioBank.VoiceEvent, emitter, ProvideSamples, ProvideFormat);
             if (playingId == 0)
-                MelonLoader.MelonLogger.Warning($"Failed to post voice event for user {userId}");
-            ApplyOutputGain();
+                MelonLoader.MelonLogger.Warning($"Failed to post voice event for user {userId}, retrying in {PostRetrySeconds:0} s");
+        }
+
+        // the wwise voice can die out from under us (failed post, engine-side stop); while packets are
+        // arriving the audio thread must be pulling samples, so a stalled read counter means repost
+        private void MonitorPlayback()
+        {
+            if (audioFaulted)
+            {
+                audioFaulted = false;
+                MelonLoader.MelonLogger.Warning($"Voice decode fault for user {userId}, resynced on the live stream");
+            }
+            if (playingId == 0)
+            {
+                PostVoiceEvent();
+                return;
+            }
+            bool expectingAudio;
+            lock (stateSync)
+                expectingAudio = started && !playbackMuted && Clock.Now - lastPacketAt < 1.0;
+            long callbacks = pcm.ReadCallbacks;
+            if (callbacks != watchdogReadCallbacks)
+            {
+                watchdogReadCallbacks = callbacks;
+                watchdogChangedAt = Clock.Now;
+                return;
+            }
+            if (!expectingAudio)
+            {
+                watchdogChangedAt = Clock.Now;
+                return;
+            }
+            if (Clock.Now - watchdogChangedAt < PlaybackStallSeconds)
+                return;
+            MelonLoader.MelonLogger.Warning($"Voice playback for user {userId} stalled, reposting audio event");
+            AkSoundEngine.StopPlayingID(playingId);
+            playingId = 0;
+            nextPostAttempt = 0;
+            PostVoiceEvent();
         }
 
         // volume boost lives in wwise's float mix where there's headroom, pcm domain stays at unity
@@ -315,7 +376,24 @@ namespace CircuitsVoiceChat
         // wwise audio thread, mono so channelIndex is always 0
         private bool ProvideSamples(uint id, uint channelIndex, float[] samples)
         {
-            ReadAudio(samples);
+            try
+            {
+                ReadAudio(samples);
+            }
+            catch (Exception)
+            {
+                // a corrupt payload must not take the wwise callback down with it; drop the
+                // stream state so the next packet resyncs, and feed silence for this pull
+                Array.Clear(samples, 0, samples.Length);
+                lock (stateSync)
+                {
+                    packets.Clear();
+                    pcm.Clear();
+                    initialized = false;
+                    started = false;
+                }
+                audioFaulted = true;
+            }
             return true; // one long-lived playingID per remote, silence-feed when idle
         }
 

@@ -27,6 +27,7 @@ namespace CircuitsVoiceChat
         private static bool moderatorMuted;
         private static IntegrationTestHarness integrationTest;
         private static float outputGain = 1f;
+        private static double nextRemoteFaultLog;
 
         internal static bool IsMuted => intendedMuted;
 
@@ -127,7 +128,21 @@ namespace CircuitsVoiceChat
                 capture.Stop();
 
             foreach (KeyValuePair<int, RemoteVoice> pair in remotes)
-                pair.Value.Update(!voiceChat.IsAudible(pair.Key));
+            {
+                // a remote mid player-transition must not stall position updates for every other voice
+                try
+                {
+                    pair.Value.Update(!voiceChat.IsAudible(pair.Key));
+                }
+                catch (Exception exception)
+                {
+                    if (Clock.Now >= nextRemoteFaultLog)
+                    {
+                        nextRemoteFaultLog = Clock.Now + 10.0;
+                        MelonLogger.Warning($"Voice update for user {pair.Key} failed: {exception.Message}");
+                    }
+                }
+            }
         }
 
         private static void Send(VoicePacket packet)
