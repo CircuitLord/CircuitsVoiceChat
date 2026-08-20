@@ -10,8 +10,11 @@ namespace CircuitsVoiceChat
         private const ushort HandshakeTalkspurt = 39999;
         private const ushort Talkspurt = 40000;
         private const ushort TransitionTalkspurt = 40001;
+        // far below the watermark (reads as -30001 via wrap-safe short math), like a freshly restarted game
+        private const ushort RestartTalkspurt = 10000;
         private const ushort TotalFrames = 265;
         private const ushort TransitionFrames = 3;
+        private const ushort RestartFrames = 12; // enough to exceed any adapted jitter target (240 ms cap)
         private readonly bool sender = CommandLineArguments.Contains("/voip_test_sender");
         private readonly bool receiver = CommandLineArguments.Contains("/voip_test_receiver");
         private readonly VoiceEncoder encoder = new VoiceEncoder();
@@ -30,6 +33,10 @@ namespace CircuitsVoiceChat
         private bool completionLogged;
         private double invalidAt;
         private int invalidSent;
+        private double restartAt = -1;
+        private bool restartSent;
+        private bool restartSeen;
+        private bool restartVerified;
         private byte[] lastPayload;
         private bool sustainedLogged;
         private double nextReceiverDrain = -1;
@@ -82,6 +89,11 @@ namespace CircuitsVoiceChat
                 sustainedLogged = true;
                 MelonLogger.Msg($"VOIP_TEST SUSTAINED plc={remote.PlcFrames} fec={remote.FecFrames} late={remote.LatePackets} waits={remote.JitterWaits} latencyDrops={remote.LatencyDrops} bufferMs={remote.BufferedMilliseconds:0} netMs={remote.EncodedBufferedMilliseconds:0} pcmMs={remote.PcmBufferedMilliseconds:0}");
             }
+            if (remote != null && restartSeen && !restartVerified && remote.LastDecodedSequence == RestartFrames - 1)
+            {
+                restartVerified = true;
+                MelonLogger.Msg($"VOIP_TEST RESTART_RESYNC_OK seq={remote.LastDecodedSequence}");
+            }
 
             if (receiver && !energyVerified && Clock.Now >= nextHandshake)
             {
@@ -103,7 +115,24 @@ namespace CircuitsVoiceChat
                     send(new VoicePacket { Talkspurt = TransitionTalkspurt, Sequence = TransitionFrames - 1, Payload = lastPayload });
                     invalidSent++;
                     MelonLogger.Msg($"VOIP_TEST INVALID_SENT duplicate={TransitionFrames - 1} count={invalidSent}");
+                    if (invalidSent == 3)
+                        restartAt = Clock.Now + 1.0;
                 }
+                if (restartSent || restartAt < 0 || Clock.Now < restartAt)
+                    return;
+                // a rejoin after a game restart resumes with talkspurts far below every watermark;
+                // the relay and the receiver must both resync on it instead of muting the sender
+                encoder.ResetTalkspurt();
+                for (ushort restartSequence = 0; restartSequence < RestartFrames; restartSequence++)
+                {
+                    FillFrame(TotalFrames + TransitionFrames + restartSequence);
+                    if (!encoder.Encode(frame, out byte[] payload, out bool restartSpurt, out _) || (restartSequence == 0 && !restartSpurt))
+                        throw new InvalidOperationException("VOIP integration restart did not start a fresh talkspurt");
+                    send(new VoicePacket { Talkspurt = RestartTalkspurt, Sequence = restartSequence, Payload = payload });
+                    if (restartSequence < 3 || restartSequence == RestartFrames - 1)
+                        MelonLogger.Msg($"VOIP_TEST RESTART_SENT seq={restartSequence} bytes={payload.Length}");
+                }
+                restartSent = true;
                 return;
             }
             if (!peerReady)
@@ -166,7 +195,12 @@ namespace CircuitsVoiceChat
                 return;
             if (expectedSender != 0 && packet.SenderId != expectedSender)
                 throw new InvalidOperationException($"VOIP integration sender identity mismatch: expected {expectedSender}, received {packet.SenderId}");
-            if (packet.Talkspurt == TransitionTalkspurt)
+            if (packet.Talkspurt == RestartTalkspurt)
+            {
+                restartSeen = true;
+                MelonLogger.Msg($"VOIP_TEST RESTART_RECEIVED sender={packet.SenderId} seq={packet.Sequence} bytes={packet.Payload.Length}");
+            }
+            else if (packet.Talkspurt == TransitionTalkspurt)
                 MelonLogger.Msg($"VOIP_TEST TRANSITION_RECEIVED sender={packet.SenderId} seq={packet.Sequence} bytes={packet.Payload.Length}");
             else if (packet.Sequence < 15 || packet.Sequence % 50 == 0 || packet.Sequence == TotalFrames - 1)
                 MelonLogger.Msg($"VOIP_TEST RECEIVED sender={packet.SenderId} spurt={packet.Talkspurt} seq={packet.Sequence} bytes={packet.Payload.Length}");

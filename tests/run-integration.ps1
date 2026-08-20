@@ -98,7 +98,9 @@ try {
             $markerText -match 'RECOVERY_OK.+fec=1.+plc=[34]' -and
             $markerText -match 'RANGE_DROP.+seq=5' -and
             $markerText -match 'RELAY.+seq=14' -and
-            $markerText -match 'VIOLATION.+count=3'
+            $markerText -match 'VIOLATION.+count=3' -and
+            $markerText -match 'RESTART_RECEIVED.+seq=0' -and
+            $markerText -match 'RESTART_RESYNC_OK'
     } until ($finished -or (Get-Date) -ge $deadline)
 
     $markers = Get-TestMarkers
