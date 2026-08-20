@@ -122,8 +122,7 @@ namespace CircuitsVoiceChat
             if (!state.Initialized || packet.Talkspurt != state.Talkspurt)
             {
                 // whole talkspurts can be missed on silence, so accept any newer spurt starting near sequence 0.
-                // a capture session that restarted without reconnecting resumes near talkspurt zero, which
-                // reads as older; a fresh spurt far behind the watermark or after a long gap is such a restart
+                // a capture session that restarted mid-connection reads as older; resync on those too
                 if (state.Initialized && (short)(packet.Talkspurt - state.Talkspurt) <= 0
                     && (short)(packet.Talkspurt - state.Talkspurt) > -SessionRestartSpurtJump
                     && receiveGap <= SessionRestartGapSeconds)

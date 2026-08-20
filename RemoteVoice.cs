@@ -108,9 +108,7 @@ namespace CircuitsVoiceChat
                 else if (packet.Talkspurt != talkspurt)
                 {
                     // accept newer talkspurts even with lost lead packets, only drop stragglers from older spurts.
-                    // a sender who restarted their game resumes near talkspurt zero, which reads as older here and
-                    // would stay muted until this client reconnects; a fresh spurt start that is far behind the
-                    // watermark or arrives after a long receive gap is such a restart, so resync on it instead
+                    // a restarted game resumes near talkspurt zero; resync on a fresh spurt far behind the watermark or after a long gap
                     short spurtDelta = (short)(packet.Talkspurt - talkspurt);
                     if (spurtDelta <= 0
                         && (packet.Sequence >= FreshSpurtSequenceWindow
@@ -401,6 +399,24 @@ namespace CircuitsVoiceChat
         {
             format.channelConfig.SetStandard((uint)AkSoundEngine.AK_SPEAKER_SETUP_MONO);
             format.uSampleRate = (uint)VoiceEncoder.SampleRate;
+        }
+
+        // wwise binds a voice to the listeners present when it was posted, so a rig rebuild leaves it
+        // playing silently; drop the emitter and the next update reposts against the live listener
+        internal void RebindPlayback()
+        {
+            if (integrationReceiver)
+                return;
+            if (playingId != 0)
+            {
+                AkSoundEngine.StopPlayingID(playingId);
+                playingId = 0;
+            }
+            if (emitter != null)
+                UnityEngine.Object.Destroy(emitter);
+            emitter = null;
+            akObj = null;
+            nextPostAttempt = 0;
         }
 
         public void Dispose()

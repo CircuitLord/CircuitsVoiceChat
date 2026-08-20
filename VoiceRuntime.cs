@@ -28,6 +28,9 @@ namespace CircuitsVoiceChat
         private static IntegrationTestHarness integrationTest;
         private static float outputGain = 1f;
         private static double nextRemoteFaultLog;
+        private static AkAudioListener boundListener;
+        private static bool hasBoundListener;
+        private static bool listenerSetEmptied;
 
         internal static bool IsMuted => intendedMuted;
 
@@ -126,6 +129,28 @@ namespace CircuitsVoiceChat
             }
             else
                 capture.Stop();
+
+            // every rig rebuild (death, customization, cave teleporters) replaces the audio listener and
+            // strands playing voices on the dead one, decoding but inaudible. rebind on any dip or instance
+            // change; the first-bind guard is a bool because the replaced listener compares as null once destroyed
+            var listenerList = AkAudioListener.DefaultListeners.ListenerList;
+            AkAudioListener currentListener = listenerList.Count > 0 ? listenerList[0] : null;
+            if (currentListener == null)
+            {
+                listenerSetEmptied = true;
+            }
+            else
+            {
+                if ((listenerSetEmptied || !ReferenceEquals(currentListener, boundListener)) && hasBoundListener && remotes.Count > 0)
+                {
+                    foreach (KeyValuePair<int, RemoteVoice> pair in remotes)
+                        pair.Value.RebindPlayback();
+                    MelonLogger.Msg($"Audio listener re-registered, rebinding {remotes.Count} voice emitter(s)");
+                }
+                listenerSetEmptied = false;
+                boundListener = currentListener;
+                hasBoundListener = true;
+            }
 
             foreach (KeyValuePair<int, RemoteVoice> pair in remotes)
             {
