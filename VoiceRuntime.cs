@@ -17,6 +17,7 @@ namespace CircuitsVoiceChat
     {
         private const string SavedMicrophoneKey = "CircuitsVoiceChat.MicrophoneDevice";
         private const string SavedOutputGainKey = "CircuitsVoiceChat.OutputGain2";
+        private const double ServerSilenceCutoff = 6.0;
         private static readonly Dictionary<int, RemoteVoice> remotes = new Dictionary<int, RemoteVoice>();
         private static readonly ReplacementVoiceChat voiceChat = new ReplacementVoiceChat();
         private static VoiceCapture capture;
@@ -27,6 +28,12 @@ namespace CircuitsVoiceChat
         private static bool moderatorMuted;
         private static IntegrationTestHarness integrationTest;
         private static float outputGain = 1f;
+        private static double nextRemoteFaultLog;
+        private static AkAudioListener boundListener;
+        private static bool hasBoundListener;
+        private static bool listenerSetEmptied;
+        private static double lastServerPacket;
+        private static bool transmitSuspended;
 
         internal static bool IsMuted => intendedMuted;
 
@@ -46,6 +53,8 @@ namespace CircuitsVoiceChat
 
             if (!ApplicationManager.IsHeadless && Application.platform != RuntimePlatform.Android)
             {
+                harmony.Patch(AccessTools.Method(typeof(Connection), "ReceivePacket"),
+                    postfix: new HarmonyMethod(typeof(VoiceRuntime), nameof(ServerPacketArrived)));
                 capture = new VoiceCapture();
                 if (PlayerPrefs.HasKey(SavedMicrophoneKey))
                     capture.SetDevice(PlayerPrefs.GetString(SavedMicrophoneKey, ""));
@@ -60,6 +69,8 @@ namespace CircuitsVoiceChat
         {
             ResolveChannel();
             serverConnection = connection;
+            lastServerPacket = Clock.Now;
+            transmitSuspended = false;
             connection.SetHandler(MessageType.VoiceChat, Receive);
             connection.Disconnected += ClientDisconnected;
         }
@@ -93,6 +104,12 @@ namespace CircuitsVoiceChat
                 ResetClient();
         }
 
+        private static void ServerPacketArrived(Connection __instance)
+        {
+            if (__instance == serverConnection)
+                lastServerPacket = Clock.Now;
+        }
+
         private static void Receive(Connection connection, Stream stream)
         {
             VoicePacket packet = VoiceProtocol.ReadServer(stream);
@@ -118,7 +135,15 @@ namespace CircuitsVoiceChat
             if (canCapture && (integrationTest == null || !integrationTest.IsActive))
             {
                 capture.Start();
-                if (Player.Current?.PlayerController != null && !(Player.Current.PlayerController is CustomizationPlayerController))
+                bool serverSilent = Clock.Now - lastServerPacket > ServerSilenceCutoff;
+                if (serverSilent != transmitSuspended)
+                {
+                    transmitSuspended = serverSilent;
+                    MelonLogger.Msg(serverSilent ? $"No server traffic for {ServerSilenceCutoff:0}s, voice transmit suspended" : "Server traffic resumed, voice transmit active");
+                }
+                if (serverSilent)
+                    capture.Discard();
+                else if (Player.Current?.PlayerController !=null && !(Player.Current.PlayerController is CustomizationPlayerController))
                     capture.Update(Send);
                 else
                     capture.Discard();
@@ -126,8 +151,44 @@ namespace CircuitsVoiceChat
             else
                 capture.Stop();
 
+            // every rig rebuild (death, customization, cave teleporters) replaces the audio listener and
+            // strands playing voices on the dead one, decoding but inaudible. rebind on any dip or instance
+            // change; the first-bind guard is a bool because the replaced listener compares as null once destroyed
+            var listenerList = AkAudioListener.DefaultListeners.ListenerList;
+            AkAudioListener currentListener = listenerList.Count > 0 ? listenerList[0] : null;
+            if (currentListener == null)
+            {
+                listenerSetEmptied = true;
+            }
+            else
+            {
+                if ((listenerSetEmptied || !ReferenceEquals(currentListener, boundListener)) && hasBoundListener && remotes.Count > 0)
+                {
+                    foreach (KeyValuePair<int, RemoteVoice> pair in remotes)
+                        pair.Value.RebindPlayback();
+                    MelonLogger.Msg($"Audio listener re-registered, rebinding {remotes.Count} voice emitter(s)");
+                }
+                listenerSetEmptied = false;
+                boundListener = currentListener;
+                hasBoundListener = true;
+            }
+
             foreach (KeyValuePair<int, RemoteVoice> pair in remotes)
-                pair.Value.Update(!voiceChat.IsAudible(pair.Key));
+            {
+                // a remote mid player-transition must not stall position updates for every other voice
+                try
+                {
+                    pair.Value.Update(!voiceChat.IsAudible(pair.Key));
+                }
+                catch (Exception exception)
+                {
+                    if (Clock.Now >= nextRemoteFaultLog)
+                    {
+                        nextRemoteFaultLog = Clock.Now + 10.0;
+                        MelonLogger.Warning($"Voice update for user {pair.Key} failed: {exception.Message}");
+                    }
+                }
+            }
         }
 
         private static void Send(VoicePacket packet)

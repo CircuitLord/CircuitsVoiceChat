@@ -21,6 +21,8 @@ The test sends real 48 kHz Opus frames through `MessageType.VoiceChat` and asser
 - a five-packet gap uses three PLC frames and one in-band FEC frame, then resumes;
 - a simulated controller transition resets the encoder and resumes at a fresh talkspurt sequence 0;
 - three duplicate sequence violations are rejected;
+- a simulated game restart (talkspurt counter far below the receiver's watermark) is relayed,
+  resynced, and decoded instead of being muted;
 - Concentus loads and passes its local encode/decode test in all three processes;
 - the selected game channel is unreliable with a 30 ms maximum send interval.
 
