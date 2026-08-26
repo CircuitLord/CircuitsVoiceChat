@@ -17,6 +17,7 @@ namespace CircuitsVoiceChat
     {
         private const string SavedMicrophoneKey = "CircuitsVoiceChat.MicrophoneDevice";
         private const string SavedOutputGainKey = "CircuitsVoiceChat.OutputGain2";
+        private const double ServerSilenceCutoff = 6.0;
         private static readonly Dictionary<int, RemoteVoice> remotes = new Dictionary<int, RemoteVoice>();
         private static readonly ReplacementVoiceChat voiceChat = new ReplacementVoiceChat();
         private static VoiceCapture capture;
@@ -31,6 +32,8 @@ namespace CircuitsVoiceChat
         private static AkAudioListener boundListener;
         private static bool hasBoundListener;
         private static bool listenerSetEmptied;
+        private static double lastServerPacket;
+        private static bool transmitSuspended;
 
         internal static bool IsMuted => intendedMuted;
 
@@ -50,6 +53,8 @@ namespace CircuitsVoiceChat
 
             if (!ApplicationManager.IsHeadless && Application.platform != RuntimePlatform.Android)
             {
+                harmony.Patch(AccessTools.Method(typeof(Connection), "ReceivePacket"),
+                    postfix: new HarmonyMethod(typeof(VoiceRuntime), nameof(ServerPacketArrived)));
                 capture = new VoiceCapture();
                 if (PlayerPrefs.HasKey(SavedMicrophoneKey))
                     capture.SetDevice(PlayerPrefs.GetString(SavedMicrophoneKey, ""));
@@ -64,6 +69,8 @@ namespace CircuitsVoiceChat
         {
             ResolveChannel();
             serverConnection = connection;
+            lastServerPacket = Clock.Now;
+            transmitSuspended = false;
             connection.SetHandler(MessageType.VoiceChat, Receive);
             connection.Disconnected += ClientDisconnected;
         }
@@ -97,6 +104,12 @@ namespace CircuitsVoiceChat
                 ResetClient();
         }
 
+        private static void ServerPacketArrived(Connection __instance)
+        {
+            if (__instance == serverConnection)
+                lastServerPacket = Clock.Now;
+        }
+
         private static void Receive(Connection connection, Stream stream)
         {
             VoicePacket packet = VoiceProtocol.ReadServer(stream);
@@ -122,7 +135,15 @@ namespace CircuitsVoiceChat
             if (canCapture && (integrationTest == null || !integrationTest.IsActive))
             {
                 capture.Start();
-                if (Player.Current?.PlayerController != null && !(Player.Current.PlayerController is CustomizationPlayerController))
+                bool serverSilent = Clock.Now - lastServerPacket > ServerSilenceCutoff;
+                if (serverSilent != transmitSuspended)
+                {
+                    transmitSuspended = serverSilent;
+                    MelonLogger.Msg(serverSilent ? $"No server traffic for {ServerSilenceCutoff:0}s, voice transmit suspended" : "Server traffic resumed, voice transmit active");
+                }
+                if (serverSilent)
+                    capture.Discard();
+                else if (Player.Current?.PlayerController !=null && !(Player.Current.PlayerController is CustomizationPlayerController))
                     capture.Update(Send);
                 else
                     capture.Discard();
